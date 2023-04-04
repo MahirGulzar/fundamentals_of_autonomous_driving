@@ -12,9 +12,7 @@ def generate_linear_trajectory(start_point, end_point, num_points):
         y = start_point[1] + (i * y_step)
         trajectory.append([x, y])
 
-    trajectory_np = np.array(trajectory)
-
-    return trajectory_np
+    return np.array(trajectory)
 
 
 def generate_curved_trajectory(start_point, end_point, num_points):
@@ -47,19 +45,6 @@ def generate_circle_trajectory(center, radius, num_points):
     
     return trajectory
 
-def generate_circle_trajectory(center, radius, num_points):
-    # Generate an array of angles
-    angles = np.linspace(0, 2*np.pi, num_points)
-    
-    # Calculate the x and y coordinates of each point on the circle
-    x_coords = center[0] + radius * np.cos(angles)
-    y_coords = center[1] + radius * np.sin(angles)
-    
-    # Combine the x and y coordinates into a single array
-    trajectory = np.column_stack((x_coords, y_coords))
-    trajectory = np.column_stack((x_coords, y_coords))
-    return trajectory
-
 def generate_sin_wave_trajectory(length=1000, amplitude=100, period=100, wavelength=500, num_points=1000):
     # Calculate the distance of each point along the trajectory
     distances = np.linspace(0, length, num_points)
@@ -76,3 +61,89 @@ def generate_sin_wave_trajectory(length=1000, amplitude=100, period=100, wavelen
 
     # Return the trajectory
     return trajectory
+
+
+
+class KalmanFilter:
+    def __init__(self, observation, use_acceleration=False):
+        
+        self.dims = 2
+        dt=0.1
+        measurement_noise=0.05 
+        process_noise=0.001
+
+        ################################
+        ### Kalman Filter Attributes ###
+        ################################
+
+        self.process_noise = process_noise
+        self.measurement_noise = measurement_noise
+
+
+        if use_acceleration:
+            self.x = np.array([observation, [0., 0.], [0., 0.]]).flatten()
+            self.P = np.vstack((
+                                np.hstack((200*np.eye(self.dims), np.zeros((self.dims, 2*self.dims)))),
+                                np.hstack((np.zeros((self.dims, self.dims)), 200*np.eye(self.dims), np.zeros((self.dims, self.dims)) )),
+                                np.hstack((np.zeros((self.dims, 2*self.dims)), 1*np.eye(self.dims) )),
+                                ))
+            self.H = np.hstack((np.eye(self.dims), np.zeros((self.dims, 2*self.dims))))
+            self.R = measurement_noise * np.eye(self.dims)
+            self.F = np.vstack((
+                                np.hstack((np.eye(self.dims), dt*np.eye(self.dims), (dt**2)/2*np.eye(self.dims))),
+                                np.hstack((np.zeros((self.dims, self.dims)), np.eye(self.dims), dt*np.eye(self.dims))),
+                                np.hstack((np.zeros((self.dims, 2 * self.dims)), np.eye(self.dims)))
+                                ))
+            self.Q = process_noise * np.eye(3*self.dims)
+
+        else:
+            self.x = np.array([observation, [0., 0.]]).flatten()
+            self.P = np.vstack((
+                                np.hstack((200*np.eye(self.dims), np.zeros((self.dims, self.dims)))),
+                                np.hstack((np.zeros((self.dims, self.dims)), 200*np.eye(self.dims) )),
+                                ))
+            self.H = np.hstack((np.eye(self.dims), np.zeros((self.dims, self.dims))))
+            self.F = np.vstack((
+                                np.hstack((np.eye(self.dims), dt*np.eye(self.dims))),
+                                np.hstack((np.zeros((self.dims, self.dims)), np.eye(self.dims))),
+                                ))
+            self.Q = process_noise * np.eye(2*self.dims)
+
+
+        self.R = np.diag((self.dims)*[measurement_noise])
+
+
+    def update(self, observation):
+
+        ############################
+        ### Kalman Filter Update ###
+        ############################
+
+        # calculate error or in KF terms 'y' --> difference between state and measurement
+        z = observation
+        err = z - np.matmul(self.H, self.x)
+        # Get system uncertainty in measurement space
+        S = np.matmul(np.matmul(self.H, self.P), self.H.transpose()) + self.R
+        S_inv = np.linalg.inv(S)
+        
+        # Update Kalman gain
+        K = np.matmul(np.matmul(self.P, self.H.transpose()), S_inv)
+        # Update state with system cov
+        self.x = self.x + np.matmul(K, err)
+        self.P = np.matmul(np.eye(self.x.shape[0]) - np.matmul(K, self.H), self.P)
+
+    def predict(self):
+
+        #############################
+        ### Kalman Filter Predict ###
+        #############################
+
+        self.x = np.matmul(self.F, self.x)
+        self.P = np.matmul(np.matmul(self.F, self.P), self.F.transpose()) + self.Q
+
+    def get_state(self):
+
+        #########################
+        ### Get Current State ###
+        #########################
+        return self.x
