@@ -73,9 +73,7 @@ class KalmanFilter:
         - use_acceleration
 
         Description:
-            The variable 'observation' represents an observation in a 2-dimensional space. It is a NumPy array of size 2, where
-            the first element represents the x-coordinate and the second element represents the y-coordinate.
-
+            The variable 'observation' represents an observation in a 2-dimensional space.
             The variable 'use_acceleration' is a boolean variable used to determine if acceleration should be used in in process
             model.
 
@@ -89,16 +87,13 @@ class KalmanFilter:
         """
 
         self.dims = 2
+        self.process_noise = 0.001
+        self.measurement_noise = 0.05 
         dt=0.1
-        measurement_noise=0.05 
-        process_noise=0.001
 
         ################################
         ### Kalman Filter Attributes ###
         ################################
-
-        self.process_noise = process_noise
-        self.measurement_noise = measurement_noise
 
 
         if use_acceleration:
@@ -109,13 +104,13 @@ class KalmanFilter:
                                 np.hstack((np.zeros((self.dims, 2*self.dims)), 1*np.eye(self.dims) )),
                                 ))
             self.H = np.hstack((np.eye(self.dims), np.zeros((self.dims, 2*self.dims))))
-            self.R = measurement_noise * np.eye(self.dims)
+            self.R = self.measurement_noise * np.eye(self.dims)
             self.F = np.vstack((
                                 np.hstack((np.eye(self.dims), dt*np.eye(self.dims), (dt**2)/2*np.eye(self.dims))),
                                 np.hstack((np.zeros((self.dims, self.dims)), np.eye(self.dims), dt*np.eye(self.dims))),
                                 np.hstack((np.zeros((self.dims, 2 * self.dims)), np.eye(self.dims)))
                                 ))
-            self.Q = process_noise * np.eye(3*self.dims)
+            self.Q = self.process_noise * np.eye(3*self.dims)
 
         else:
             self.x = np.array([observation, [0., 0.]]).flatten()
@@ -128,10 +123,10 @@ class KalmanFilter:
                                 np.hstack((np.eye(self.dims), dt*np.eye(self.dims))),
                                 np.hstack((np.zeros((self.dims, self.dims)), np.eye(self.dims))),
                                 ))
-            self.Q = process_noise * np.eye(2*self.dims)
+            self.Q = self.process_noise * np.eye(2*self.dims)
 
 
-        self.R = np.diag((self.dims)*[measurement_noise])
+        self.R = np.diag((self.dims)*[self.measurement_noise])
 
 
     def update(self, observation):
@@ -141,7 +136,7 @@ class KalmanFilter:
 
         Description:
             Update function takes in the variable 'observation' which represents an observation in a 2-dimensional space. 
-            It is a NumPy array of size 2. The function updates the state of the Kalman filter.
+            The function updates the state of the Kalman filter using latest observation.
 
         Attributes:
         - observation:
