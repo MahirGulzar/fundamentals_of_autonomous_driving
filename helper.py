@@ -66,7 +66,28 @@ def generate_sin_wave_trajectory(length=1000, amplitude=100, period=100, wavelen
 
 class KalmanFilter:
     def __init__(self, observation, use_acceleration=False):
-        
+
+        """
+        Variables:
+        - observation
+        - use_acceleration
+
+        Description:
+            The variable 'observation' represents an observation in a 2-dimensional space. It is a NumPy array of size 2, where
+            the first element represents the x-coordinate and the second element represents the y-coordinate.
+
+            The variable 'use_acceleration' is a boolean variable used to determine if acceleration should be used in in process
+            model.
+
+        Attributes:
+        - observation:
+            - Shape: (2,)
+            - Dtype: float64
+
+        - use_acceleration:
+            - Type: bool
+        """
+
         self.dims = 2
         dt=0.1
         measurement_noise=0.05 
@@ -114,6 +135,19 @@ class KalmanFilter:
 
 
     def update(self, observation):
+        """
+        Variables:
+        - observation
+
+        Description:
+            Update function takes in the variable 'observation' which represents an observation in a 2-dimensional space. 
+            It is a NumPy array of size 2. The function updates the state of the Kalman filter.
+
+        Attributes:
+        - observation:
+            - Shape: (2,)
+            - Dtype: float64
+        """
 
         ############################
         ### Kalman Filter Update ###
@@ -133,6 +167,10 @@ class KalmanFilter:
         self.P = np.matmul(np.eye(self.x.shape[0]) - np.matmul(K, self.H), self.P)
 
     def predict(self):
+        """
+        Description:
+            Performs the prediction step of the Kalman filter.
+        """
 
         #############################
         ### Kalman Filter Predict ###
@@ -142,6 +180,17 @@ class KalmanFilter:
         self.P = np.matmul(np.matmul(self.F, self.P), self.F.transpose()) + self.Q
 
     def get_state(self):
+        """
+        Description:
+            Returns the current state of the Kalman filter.
+            
+            Returns:
+            - state: The current state of the Kalman filter.
+            
+            
+            - Shape: (4,)
+            - Dtype: float64
+        """
 
         #########################
         ### Get Current State ###
